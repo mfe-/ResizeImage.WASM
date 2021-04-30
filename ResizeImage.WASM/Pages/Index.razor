@@ -1,0 +1,53 @@
+﻿@page "/"
+@inherits IndexComponent
+
+@using System.IO
+
+<h3>Upload Files</h3>
+
+<p>
+    <label>
+        Max file size:
+        <input type="number" @bind="maxFileSize" />
+    </label>
+</p>
+
+<p>
+    <label>
+        Max allowed files:
+        <input type="number" @bind="maxAllowedFiles" />
+    </label>
+</p>
+
+<p>
+    <label>
+        Upload up to @maxAllowedFiles files of up to @maxFileSize bytes each:
+        <InputFile OnChange="@LoadFiles" multiple />
+    </label>
+</p>
+
+<p>@exceptionMessage</p>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+<img src="@ImageBase64" />
+<ul>
+    @foreach (var (file, content) in loadedFiles)
+    {
+        <li>
+            <ul>
+                <li>Name: @file.Name</li>
+                <li>Last modified: @file.LastModified.ToString()</li>
+                <li>Size (bytes): @file.Size</li>
+                <li>Content type: @file.ContentType</li>
+                @if (file.ContentType.Contains("image/", StringComparison.OrdinalIgnoreCase))
+                {
+                    <li><img src="@String.Format("data:{0};base64, {1}",file.ContentType,System.Convert.ToBase64String(content.ToArray()))" /></li>
+                }
+
+            </ul>
+        </li>
+    }
+</ul>
