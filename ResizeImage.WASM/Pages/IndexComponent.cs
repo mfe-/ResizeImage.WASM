@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -28,7 +31,7 @@ namespace ResizeImage.WASM.Pages
             foreach (var item in ImageFiles)
             {
                 item?.Stream?.Dispose();
-                (item?.Tag as SixLabors.ImageSharp.Image)?.Dispose();
+                (item?.Tag as Image)?.Dispose();
             }
             ImageFiles.Clear();
         }
@@ -51,11 +54,12 @@ namespace ResizeImage.WASM.Pages
                     s.Dispose();
 
                     memoryStream.Position = 0;
-                    var i = await SixLabors.ImageSharp.Image.LoadAsync(memoryStream);
-                    ImageFile imageFile = new ImageFile(file.Name, memoryStream, i.Width, i.Height)
+                    var image = await Image.LoadAsync(memoryStream);
+                    ImageFile imageFile = new ImageFile(file.Name, memoryStream, image.Width, image.Height)
                     {
                         ContentType = file.ContentType,
-                        Tag = i
+                        Tag = image,
+                        FileInfo = new FileInfo(file.Name)
                     };
 
                     ImageFiles.Add(imageFile);
@@ -68,13 +72,94 @@ namespace ResizeImage.WASM.Pages
 
             isLoading = false;
         }
-        public string result = "";
-        protected Task OnResizeButtonClick()
+        [Inject]
+        protected IJSRuntime JSRuntime { get; set; }
+        protected async Task OnResizeButtonClick()
         {
-            result = "asdf";
-            return Task.CompletedTask;
+            try
+            {
+                await ResizeImages();
+            }
+            catch (Exception e)
+            {
+                exceptionMessage = e.Message;
+            }
+        }
+        protected string output;
+        public async Task ResizeImages()
+        {
+            Resizing = true;
+            //if no file is selected open file picker 
+            if (ImageFiles == null || ImageFiles.Count == 0)
+            {
+                //todo open filepicker
+            }
+            String suggestedFileName = String.Empty;
+            foreach (ImageFile currentImage in ImageFiles)
+            {
+                output = "1";
+
+                currentImage.NewHeight = 100;
+                currentImage.NewWidth = 100;
+
+                suggestedFileName = GenerateResizedFileName(currentImage, currentImage.NewWidth, currentImage.NewHeight);
+
+                output = "2";
+                if (currentImage.Tag is Image img)
+                {
+                    output = "3";
+                    using (var ms = new MemoryStream())
+                    {
+                        img.Mutate((x) => x.AutoOrient().Resize(currentImage.NewWidth, currentImage.NewHeight));
+                        output = "4";
+                        await img.SaveAsync(ms,
+                                new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder() { Quality = 90 });
+                        output = "5";
+                        var bytes = ms.ToArray();
+                        await SaveAs(JSRuntime, suggestedFileName, bytes);
+                        output = "6";
+                    }
+                }
+
+            }
+        }
+        public virtual string GenerateResizedFileName(ImageFile storeage, int? width, int? height)
+        {
+
+            if (!width.HasValue)
+            {
+                width = storeage.Width;
+            }
+            if (!height.HasValue)
+            {
+                height = storeage.Height;
+            }
+            if (storeage != null)
+            {
+                string suggestedfilename = $"{storeage.FileInfo.Name.Replace(storeage.FileInfo.Extension, String.Empty)}-{width}x{height}{storeage.FileInfo.Extension}";
+                return suggestedfilename;
+            }
+            else
+            {
+                return String.Empty;
+            }
+
+            return String.Empty;
         }
 
+        /// <summary>
+        /// Get or sets the flag which indicates whether a resize operation is currently processed
+        /// </summary>
+        /// <remarks>Also this flag is set to true when the user selected (open) images for resizing</remarks>
+        private bool _Resizing;
+        public bool Resizing
+        {
+            get { return _Resizing; }
+            protected set
+            {
+                SetProperty(ref _Resizing, value, nameof(Resizing));
+            }
+        }
 
         public int Width { get; set; }
 
@@ -113,6 +198,14 @@ namespace ResizeImage.WASM.Pages
                 OnPropertyChanged(nameof(ImageFiles));
             }
             //ApplyPreviewDimensions();
+        }
+
+        public async static Task SaveAs(IJSRuntime js, string filename, byte[] data)
+        {
+            await js.InvokeAsync<object>(
+                "saveAsFile",
+                filename,
+                Convert.ToBase64String(data));
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
