@@ -1,53 +1,48 @@
 ﻿@page "/"
-@inherits IndexComponent
+@inherits IndexComponent;
 
 @using System.IO
 
-<h3>Upload Files</h3>
+<div class="form-group">
+    <p>
+        <label for="exampleFormControlFile1">
+            Click "Choose Files" to select images which you want to resize (@maxAllowedFiles files of up to @maxFileSize bytes each)
+            <InputFile OnChange="@OpenFilePicker" multiple class="form-control-file" id="exampleFormControlFile1" />
+        </label>
+        <p/>
+        <label for="resizeButton">
+            <button type="submit" class="btn btn-primary mb-2" @onclick="OnResizeButtonClick" id="resizeButton">Resize</button>
+        </label>
+    </p>
+    
 
-<p>
-    <label>
-        Max file size:
-        <input type="number" @bind="maxFileSize" />
-    </label>
-</p>
+    @result
 
-<p>
-    <label>
-        Max allowed files:
-        <input type="number" @bind="maxAllowedFiles" />
-    </label>
-</p>
+    <p>@exceptionMessage</p>
 
-<p>
-    <label>
-        Upload up to @maxAllowedFiles files of up to @maxFileSize bytes each:
-        <InputFile OnChange="@LoadFiles" multiple />
-    </label>
-</p>
-
-<p>@exceptionMessage</p>
-
-@if (isLoading)
-{
-    <p>Loading...</p>
-}
-
-<ul>
-    @foreach (var (file, content) in loadedFiles)
+    @if (isLoading)
     {
-        <li>
-            <ul>
-                <li>Name: @file.Name</li>
-                <li>Last modified: @file.LastModified.ToString()</li>
-                <li>Size (bytes): @file.Size</li>
-                <li>Content type: @file.ContentType</li>
-                @if (file.ContentType.Contains("image/", StringComparison.OrdinalIgnoreCase))
-                {
-                    <li><img src="@String.Format("data:{0};base64, {1}",file.ContentType,System.Convert.ToBase64String(content.ToArray()))" /></li>
-                }
-
-            </ul>
-        </li>
+        <p>Loading...</p>
     }
-</ul>
+
+    <ul>
+        @foreach (var image in ImageFiles)
+        {
+            <li>
+                <ul>
+                    <li>Name: @image.Name</li>
+                    <li>Last modified: @image.LastModified.ToString()</li>
+                    <li>Size (bytes): @image.Size</li>
+                    <li>Content type: @image.ContentType</li>
+                    <li>width: @image.Width</li>
+                    <li>height: @image.Height</li>
+                    @if (image.ContentType.Contains("image/", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <li><img src="@image.ToBase64ImageSrc()" /></li>
+                    }
+
+                </ul>
+            </li>
+        }
+    </ul>
+</div>
