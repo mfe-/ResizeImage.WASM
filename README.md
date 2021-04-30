@@ -1,0 +1,1 @@
+# ResizeImage.WASM
