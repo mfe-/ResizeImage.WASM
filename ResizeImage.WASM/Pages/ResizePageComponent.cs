@@ -21,6 +21,20 @@ namespace ResizeImage.WASM.Pages
         protected bool isLoading;
         protected string exceptionMessage;
 
+        public ResizePageComponent()
+        {
+
+            WidthCustom = "1024";
+            HeightCustom = "768";
+            WidthPercent = "50";
+            HeightPercent = "50";
+        }
+        protected override void OnAfterRender(bool firstRender)
+        {
+            base.OnAfterRender(firstRender);
+            PropertyChanged += ResizePageViewModel_PropertyChanged;
+        }
+
         public void Dispose()
         {
             UnloadFiles();
@@ -32,7 +46,7 @@ namespace ResizeImage.WASM.Pages
             {
                 item.Stream?.Dispose();
                 item.Stream = null;
-                if(item.Tag is Image img)
+                if (item.Tag is Image img)
                 {
                     img.Dispose();
                 }
@@ -46,18 +60,102 @@ namespace ResizeImage.WASM.Pages
         [Inject]
         public ResizeSettings Settings
         {
-            get;
+            get; //todo store in localstorage and 
             protected set;
         }
 
 
-        protected int RadioOptions;
+        private int _RadioOptions;
+        public int RadioOptions
+        {
+            get { return _RadioOptions; }
+            set { 
+                SetProperty(ref _RadioOptions, value, nameof(RadioOptions));
+                ApplyPreviewDimensions();
+            }
+        }
 
-        public string WidthCustom { get; set; }
-        public string HeightCustom { get; set; }
 
-        public string WidthPercent { get; set; }
-        public string HeightPercent { get; set; }
+        private string _WidthCustom;
+        public string WidthCustom
+        {
+            get { return _WidthCustom; }
+            set { SetProperty(ref _WidthCustom, value, nameof(WidthCustom)); }
+        }
+
+        private string _HeightCustom;
+        public string HeightCustom
+        {
+            get { return _HeightCustom; }
+            set { SetProperty(ref _HeightCustom, value, nameof(HeightCustom)); }
+        }
+
+        private string _HeightPercent;
+        public string HeightPercent
+        {
+            get { return _HeightPercent; }
+            set { SetProperty(ref _HeightPercent, value, nameof(HeightPercent)); }
+        }
+
+        private string _WidthPercent;
+        public string WidthPercent
+        {
+            get { return _WidthPercent; }
+            set { SetProperty(ref _WidthPercent, value, nameof(WidthPercent)); }
+        }
+
+        private bool _MaintainAspectRatioWidth;
+        public bool MaintainAspectRatioWidth
+        {
+            get { return _MaintainAspectRatioWidth; }
+            set
+            {
+                SetProperty(ref _MaintainAspectRatioWidth, value, nameof(MaintainAspectRatioWidth));
+                if (MaintainAspectRatioWidth)
+                {
+                    MaintainAspectRatioHeight = false;
+                }
+                HeightCustomDisabled = MaintainAspectRatioWidth;
+                MaintainAspectRatio = _MaintainAspectRatioWidth || _MaintainAspectRatioHeight;
+            }
+        }
+
+        private bool _MaintainAspectRatioHeight;
+        public bool MaintainAspectRatioHeight
+        {
+            get { return _MaintainAspectRatioHeight; }
+            set
+            {
+                SetProperty(ref _MaintainAspectRatioHeight, value, nameof(MaintainAspectRatioHeight));
+                if (MaintainAspectRatioHeight)
+                {
+                    MaintainAspectRatioWidth = false;
+                }
+                WidthCustomDisabled = MaintainAspectRatioHeight;
+                MaintainAspectRatio = _MaintainAspectRatioWidth || _MaintainAspectRatioHeight;
+            }
+        }
+
+        private bool _MaintainAspectRatio;
+        public bool MaintainAspectRatio
+        {
+            get { return _MaintainAspectRatio; }
+            set
+            {
+                SetProperty(ref _MaintainAspectRatio, value, nameof(MaintainAspectRatio));
+                PercentDisabled = _MaintainAspectRatio;
+                ApplyPreviewDimensions();
+            }
+        }
+
+        protected bool PercentDisabled { get; set; } = false;
+
+        protected bool HeightCustomDisabled { get; set; }
+
+        protected bool WidthCustomDisabled { get; set; }
+
+
+        public bool SizePercentChecked => RadioOptions == 4;
 
         protected async Task OpenFilePicker(InputFileChangeEventArgs e)
         {
@@ -87,6 +185,7 @@ namespace ResizeImage.WASM.Pages
 
                     ImageFiles.Add(imageFile);
                 }
+                ApplyPreviewDimensions();
             }
             catch (Exception ex)
             {
@@ -109,7 +208,7 @@ namespace ResizeImage.WASM.Pages
             }
         }
 
-        protected async Task OnCancelButtonClick()
+        protected void OnCancelButtonClick()
         {
             try
             {
@@ -124,40 +223,92 @@ namespace ResizeImage.WASM.Pages
         protected string output;
         public async Task ResizeImages()
         {
-            Resizing = true;
-            //if no file is selected open file picker 
-            if (ImageFiles == null || ImageFiles.Count == 0)
+            try
             {
-                //todo open filepicker
+                Resizing = true;
+                //if no file is selected open file picker 
+                if (ImageFiles == null || ImageFiles.Count == 0)
+                {
+                    await JSRuntime.InvokeVoidAsync("openFilepicker");
+                }
+                String suggestedFileName = String.Empty;
+                foreach (ImageFile currentImage in ImageFiles)
+                {
+                    output = "1";
+
+                    currentImage.NewHeight = 100;
+                    currentImage.NewWidth = 100;
+
+                    suggestedFileName = GenerateResizedFileName(currentImage, currentImage.NewWidth, currentImage.NewHeight);
+
+                    output = "2";
+                    if (currentImage.Tag is Image img)
+                    {
+                        output = "3";
+                        using (var ms = new MemoryStream())
+                        {
+                            img.Mutate((x) => x.AutoOrient().Resize(currentImage.NewWidth, currentImage.NewHeight));
+                            output = "4";
+                            await img.SaveAsync(ms,
+                                    new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder() { Quality = 90 });
+                            output = "5";
+                            var bytes = ms.ToArray();
+                            await SaveAs(JSRuntime, suggestedFileName, bytes);
+                            output = "6";
+                        }
+                    }
+
+                }
             }
-            String suggestedFileName = String.Empty;
+            finally
+            {
+                Resizing = false;
+            }
+           
+        }
+        public void ApplyPreviewDimensions()
+        {
             foreach (ImageFile currentImage in ImageFiles)
             {
-                output = "1";
+                int newWidth;
+                int newHeight;
 
-                currentImage.NewHeight = 100;
-                currentImage.NewWidth = 100;
+                int height = 0;
+                int.TryParse(HeightCustom, out height);
+                int width = 0;
+                int.TryParse(WidthCustom, out width);
 
-                suggestedFileName = GenerateResizedFileName(currentImage, currentImage.NewWidth, currentImage.NewHeight);
-
-                output = "2";
-                if (currentImage.Tag is Image img)
+                if (MaintainAspectRatio)
                 {
-                    output = "3";
-                    using (var ms = new MemoryStream())
+                    if (MaintainAspectRatioHeight)
                     {
-                        img.Mutate((x) => x.AutoOrient().Resize(currentImage.NewWidth, currentImage.NewHeight));
-                        output = "4";
-                        await img.SaveAsync(ms,
-                                new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder() { Quality = 90 });
-                        output = "5";
-                        var bytes = ms.ToArray();
-                        await SaveAs(JSRuntime, suggestedFileName, bytes);
-                        output = "6";
+                        newWidth = (int)(((double)currentImage.Width / (double)currentImage.Height) * (double)height);
+                        newHeight = height;
+                    }
+                    else
+                    {
+                        newWidth = width;
+                        newHeight = (int)(((double)currentImage.Height / (double)currentImage.Width) * (double)width);
                     }
                 }
-
+                else if (SizePercentChecked)
+                {
+                    int heightpercent = 0;
+                    int.TryParse(HeightPercent, out heightpercent);
+                    int widthpercent = 0;
+                    int.TryParse(WidthPercent, out widthpercent);
+                    newWidth = currentImage.Width * widthpercent / 100;
+                    newHeight = currentImage.Height * heightpercent / 100;
+                }
+                else
+                {
+                    newWidth = width;
+                    newHeight = height;
+                }
+                currentImage.NewWidth = newWidth;
+                currentImage.NewHeight = newHeight;
             }
+            StateHasChanged();
         }
         public virtual string GenerateResizedFileName(ImageFile storeage, int? width, int? height)
         {
@@ -195,9 +346,6 @@ namespace ResizeImage.WASM.Pages
             }
         }
 
-        public int Width { get; set; }
-
-        public int Height { get; set; }
 
         /// <summary>
         /// Get or sets the list of files which should be resized
@@ -208,12 +356,8 @@ namespace ResizeImage.WASM.Pages
             get { return _ImageFiles; }
             set
             {
-                //SetProperty(ref _ImageFiles, value, nameof(ImageFiles));
-                if (ImageFiles != null)
-                {
-                    ImageFiles.CollectionChanged += ImageFiles_CollectionChanged;
-                }
-                //ApplyPreviewDimensions();
+                SetProperty(ref _ImageFiles, value, nameof(ImageFiles));
+                ApplyPreviewDimensions();
                 //OnPropertyChanged(nameof(ShowOpenFilePicker));
                 //OnPropertyChanged(nameof(SingleFile));
             }
@@ -222,17 +366,6 @@ namespace ResizeImage.WASM.Pages
         {
             get { return ImageFiles != null && ImageFiles.Count == 0; }
         }
-        private void ImageFiles_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-        {
-            //OnPropertyChanged(nameof(ShowOpenFilePicker));
-            //OnPropertyChanged(nameof(CanOverwriteFiles));
-            //OnPropertyChanged(nameof(SingleFile));
-            if (!_ImageFiles.Any())
-            {
-                OnPropertyChanged(nameof(ImageFiles));
-            }
-            //ApplyPreviewDimensions();
-        }
 
         public async static Task SaveAs(IJSRuntime js, string filename, byte[] data)
         {
@@ -240,6 +373,33 @@ namespace ResizeImage.WASM.Pages
                 "saveAsFile",
                 filename,
                 Convert.ToBase64String(data));
+        }
+
+        private void ResizePageViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            try
+            {
+                PropertyChanged -= ResizePageViewModel_PropertyChanged;
+                if (
+                      e.PropertyName.Equals(nameof(SizePercentChecked)) ||
+                      e.PropertyName.Equals(nameof(WidthCustom)) ||
+                      e.PropertyName.Equals(nameof(HeightCustom)) ||
+                      e.PropertyName.Equals(nameof(WidthPercent)) ||
+                      e.PropertyName.Equals(nameof(HeightPercent)
+                      ))
+                {
+                    ApplyPreviewDimensions();
+                }
+            }
+            catch (Exception ex)
+            {
+                exceptionMessage = ex.ToString();
+            }
+            finally
+            {
+                PropertyChanged -= ResizePageViewModel_PropertyChanged;
+                PropertyChanged += ResizePageViewModel_PropertyChanged;
+            }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

@@ -6,4 +6,7 @@ function saveAsFile(filename, bytesBase64) {
     link.click();
     document.body.removeChild(link);
 }
+function openFilepicker() {
+    document.getElementById("filepicker").click();
+}
 //# sourceMappingURL=file.js.map

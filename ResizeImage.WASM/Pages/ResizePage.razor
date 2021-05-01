@@ -4,96 +4,103 @@
 @using System.IO
 
 
-    <div class="form-group">
+<div class="form-group">
 
-        <label for="exampleFormControlFile1">
-            Click "Choose Files" to select images which you want to resize (@maxAllowedFiles files of up to @maxFileSize bytes each)
-        </label>
-        <div class="col-sm-10">
-            <InputFile OnChange="@OpenFilePicker" multiple class="form-control-file btn btn-default" id="exampleFormControlFile1" />
-        </div>
-        <p />
-        <div class="input-group">
-            @{
-                void RadioSelection(ChangeEventArgs args)
-                {
-                    RadioOptions = Convert.ToInt32(args.Value.ToString());
-                }
-            }
-            <label>
-                <input type="radio" name="RadioOptions" id="customWidthHeightRadio" value="3"
-                       @onchange="RadioSelection" checked=@(RadioOptions == 3)>
-                Custom (fits a
-            </label>
-            <div class="col-xs-2">
-                <input type="text" class="form-control input-sm" @bind="WidthCustom" placeholder="Width" maxlength="5"
-                       @onclick="()=>RadioSelection(new ChangeEventArgs() { Value='3' })"/>
-            </div>
-            <span class="input-group-addon"> by </span>
-            <div class="col-xs-2">
-                <input type="text" class="form-control input-sm" @bind="HeightCustom" placeholder="Height" maxlength="5"
-                       @onclick="()=>RadioSelection(new ChangeEventArgs() { Value='3' })"/>
-            </div>
-            <span class="input-group-addon">screen)</span>
-        </div>
-        <p />
-        <div class="input-group">
-            <label>
-                <input type="radio" name="RadioOptions" id="percentWidthHeightRadio" value="4"
-                       @onchange="RadioSelection" checked=@(RadioOptions == 4)>
-                Percent
-            </label>
-            <div class="col-xs-2">
-                <input type="text" class="form-control input-sm" @bind="WidthPercent" placeholder="Width" maxlength="5"
-                       @onclick="()=>RadioSelection(new ChangeEventArgs() { Value='4' })"/>
-            </div>
-            <span class="input-group-addon"> by </span>
-            <div class="col-xs-2">
-                <input type="text" class="form-control input-sm" @bind="HeightPercent" placeholder="Height" maxlength="5" 
-                       @onclick="()=>RadioSelection(new ChangeEventArgs() { Value='4' })"/>
-            </div>
-            <span class="input-group-addon">%</span>
-        </div>
-        <p />
-        <label for="resizeButton">
-            <button type="submit" class="btn btn-primary mb-2" @onclick="OnResizeButtonClick" id="resizeButton">Resize</button>
-        </label>
-        <label for="cancelButton">
-            <button type="submit" class="btn btn-primary mb-2" @onclick="OnCancelButtonClick" id="cancelButton">Cancel</button>
-        </label>
+    <label for="exampleFormControlFile1">
+        Click "Choose Files" to select images which you want to resize (@maxAllowedFiles files of up to @maxFileSize bytes each)
+    </label>
+    <div class="col-sm-10">
+        <InputFile OnChange="@OpenFilePicker" multiple class="form-control-file btn btn-default" id="filepicker" />
     </div>
+    <p />
+    <div class="input-group">
+        @{
+            void RadioSelection(ChangeEventArgs args)
+            {
+                RadioOptions = Convert.ToInt32(args.Value.ToString());
+            }
+        }
+        <label>
+            <input type="radio" name="RadioOptions" id="customWidthHeightRadio" value="3"
+                   @onchange="RadioSelection" checked=@(RadioOptions == 3)>
+            Custom (fits a
+        </label>
+        <div class="col-xs-2">
+            <input type="text" class="form-control input-sm" @bind="WidthCustom" placeholder="Width" maxlength="5"
+                   @onclick="()=>RadioSelection(new ChangeEventArgs() { Value='3' })" disabled="@WidthCustomDisabled"
+                   onkeyup="this.value=this.value.replace(/[^\d]/,'')" />
+        </div>
+        <span class="input-group-addon"> by </span>
+        <div class="col-xs-2">
+            <input type="text" class="form-control input-sm" @bind="HeightCustom" placeholder="Height" maxlength="5"
+                   @onclick="()=>RadioSelection(new ChangeEventArgs() { Value='3' })" disabled="@HeightCustomDisabled"
+                   onkeyup="this.value=this.value.replace(/[^\d]/,'')" />
+        </div>
+        <span class="input-group-addon">screen)</span>
+    </div>
+    <p />
+    <div class="input-group">
+        <label>
+            <input type="radio" name="RadioOptions" id="percentWidthHeightRadio" value="4"
+                   @onchange="RadioSelection" checked=@(RadioOptions == 4)>
+            Percent
+        </label>
+        <div class="col-xs-2">
+            <input type="text" class="form-control input-sm" @bind="WidthPercent" placeholder="Width" maxlength="5"
+                   @onclick="()=>RadioSelection(new ChangeEventArgs() { Value='4' })" disabled="@PercentDisabled"
+                   onkeyup="this.value=this.value.replace(/[^\d]/,'')" />
+        </div>
+        <span class="input-group-addon"> by </span>
+        <div class="col-xs-2">
+            <input type="text" class="form-control input-sm" @bind="HeightPercent" placeholder="Height" maxlength="5"
+                   @onclick="()=>RadioSelection(new ChangeEventArgs() { Value='4' })" disabled="@PercentDisabled"
+                   onkeyup="this.value=this.value.replace(/[^\d]/,'')" />
+        </div>
+        <span class="input-group-addon">%</span>
+    </div>
+    <p />
+    <div class="input-group">
+        <div class="col-md-auto">
+            <input class="form-check-input" type="checkbox" id="checkAspectRatioWidth"
+                   @bind="MaintainAspectRatioWidth">
+            <label class="form-check-label" for="checkAspectRatioWidth">
+                Keep aspect ratio (set width)
+            </label>
+        </div>
+        <div class="col-md-auto">
+            <input class="form-check-input" type="checkbox" id="checkAspectRatioHeight" @bind="MaintainAspectRatioHeight">
+            <label class="form-check-label" for="checkAspectRatioHeight">
+                Keep aspect ratio (set height)
+            </label>
+        </div>
+    </div>
+    <p />
+    <ul class="list-group">
+        @foreach (var image in ImageFiles)
+        {
+            <li class="list-group-item">@image.Name @image.Width x @image.Height -> @image.NewWidth x @image.NewHeight</li>
+            @*<img src="@image.ToBase64ImageSrc()" />*@
+        }
+    </ul>
+    <p />
+    <label for="resizeButton">
+        <button type="submit" class="btn btn-primary mb-2" @onclick="OnResizeButtonClick" id="resizeButton" disabled="@Resizing">Resize and download</button>
+    </label>
+    <label for="cancelButton">
+        <button type="submit" class="btn btn-primary mb-2" @onclick="OnCancelButtonClick" id="cancelButton" disabled="@Resizing">Cancel</button>
+    </label>
+</div>
+
+@if (Resizing)
+{
+    <p>Resizing images, this can take some time, please be patient.</p>
+}
 
 @output
-radio @RadioOptions
 
 <p>@exceptionMessage</p>
-@WidthCustom
-@HeightCustom
-@Settings.HeightCustom
-@Settings.WidthCustom
 
 @if (isLoading)
 {
-    <p>Loading...</p>
+    <p>Loading images, please be patient...</p>
 }
-
-<ul>
-    @foreach (var image in ImageFiles)
-    {
-        <li>
-            <ul>
-                <li>Name: @image.Name</li>
-                <li>Last modified: @image.LastModified.ToString()</li>
-                <li>Size (bytes): @image.Size</li>
-                <li>Content type: @image.ContentType</li>
-                <li>width: @image.Width</li>
-                <li>height: @image.Height</li>
-                @if (image.ContentType.Contains("image/", StringComparison.OrdinalIgnoreCase))
-                {
-                    <li><img src="@image.ToBase64ImageSrc()" /></li>
-                }
-
-            </ul>
-        </li>
-    }
-</ul>
