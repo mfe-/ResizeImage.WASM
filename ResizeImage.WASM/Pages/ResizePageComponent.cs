@@ -236,9 +236,6 @@ namespace ResizeImage.WASM.Pages
                 {
                     output = "1";
 
-                    currentImage.NewHeight = 100;
-                    currentImage.NewWidth = 100;
-
                     suggestedFileName = GenerateResizedFileName(currentImage, currentImage.NewWidth, currentImage.NewHeight);
 
                     output = "2";
