@@ -30,11 +30,34 @@ namespace ResizeImage.WASM.Pages
         {
             foreach (var item in ImageFiles)
             {
-                item?.Stream?.Dispose();
-                (item?.Tag as Image)?.Dispose();
+                item.Stream?.Dispose();
+                item.Stream = null;
+                if(item.Tag is Image img)
+                {
+                    img.Dispose();
+                }
             }
             ImageFiles.Clear();
         }
+
+        /// <summary>
+        /// Gets the Settings object
+        /// </summary>
+        [Inject]
+        public ResizeSettings Settings
+        {
+            get;
+            protected set;
+        }
+
+
+        protected int RadioOptions;
+
+        public string WidthCustom { get; set; }
+        public string HeightCustom { get; set; }
+
+        public string WidthPercent { get; set; }
+        public string HeightPercent { get; set; }
 
         protected async Task OpenFilePicker(InputFileChangeEventArgs e)
         {
@@ -85,6 +108,19 @@ namespace ResizeImage.WASM.Pages
                 exceptionMessage = e.Message;
             }
         }
+
+        protected async Task OnCancelButtonClick()
+        {
+            try
+            {
+                UnloadFiles();
+            }
+            catch (Exception e)
+            {
+                exceptionMessage = e.Message;
+            }
+        }
+
         protected string output;
         public async Task ResizeImages()
         {
@@ -143,8 +179,6 @@ namespace ResizeImage.WASM.Pages
             {
                 return String.Empty;
             }
-
-            return String.Empty;
         }
 
         /// <summary>
