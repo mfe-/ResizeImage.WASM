@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace ResizeImage.WASM.Pages
 {
-    public class IndexComponent : ComponentBase, IDisposable, INotifyPropertyChanged
+    public class ResizePageComponent : ComponentBase, IDisposable, INotifyPropertyChanged
     {
         protected long maxFileSize = 5 * 1000 * 100;
         protected int maxAllowedFiles = 3;
