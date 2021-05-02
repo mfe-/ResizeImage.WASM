@@ -18,6 +18,12 @@
             void RadioSelection(ChangeEventArgs args)
             {
                 RadioOptions = Convert.ToInt32(args.Value.ToString());
+                if(RadioOptions==4)
+                {
+                    //disable maintain aspect ratio
+                    MaintainAspectRatioHeight = false;
+                    MaintainAspectRatioWidth = false;
+                }
             }
         }
         <label>

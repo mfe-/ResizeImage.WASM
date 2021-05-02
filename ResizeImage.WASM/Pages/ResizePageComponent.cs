@@ -114,6 +114,7 @@ namespace ResizeImage.WASM.Pages
                 if (MaintainAspectRatioWidth)
                 {
                     MaintainAspectRatioHeight = false;
+                    RadioOptions = 3;
                 }
                 HeightCustomDisabled = MaintainAspectRatioWidth;
                 MaintainAspectRatio = _MaintainAspectRatioWidth || _MaintainAspectRatioHeight;
@@ -130,6 +131,7 @@ namespace ResizeImage.WASM.Pages
                 if (MaintainAspectRatioHeight)
                 {
                     MaintainAspectRatioWidth = false;
+                    RadioOptions = 3;
                 }
                 WidthCustomDisabled = MaintainAspectRatioHeight;
                 MaintainAspectRatio = _MaintainAspectRatioWidth || _MaintainAspectRatioHeight;
