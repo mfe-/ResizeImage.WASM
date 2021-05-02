@@ -9,4 +9,10 @@ function saveAsFile(filename, bytesBase64) {
 function openFilepicker() {
     document.getElementById("filepicker").click();
 }
+function showLoadingIndicator(currentfile, totalItems, proccessedItems) {
+    document.getElementById("processindicator").textContent = "Proccessing " + currentfile + " " + proccessedItems + "/" + totalItems;
+}
+function closeLoadingIndicator() {
+    document.getElementById("processindicator").textContent = "";
+}
 //# sourceMappingURL=file.js.map

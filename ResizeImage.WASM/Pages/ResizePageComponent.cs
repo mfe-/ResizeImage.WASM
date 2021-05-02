@@ -64,7 +64,7 @@ namespace ResizeImage.WASM.Pages
         }
 
 
-        private int _RadioOptions;
+        private int _RadioOptions = 3;
         public int RadioOptions
         {
             get { return _RadioOptions; }
@@ -202,7 +202,9 @@ namespace ResizeImage.WASM.Pages
         {
             try
             {
+                Resizing = true;
                 await ResizeImages();
+                Resizing = false;
             }
             catch (Exception e)
             {
@@ -234,34 +236,33 @@ namespace ResizeImage.WASM.Pages
                     await JSRuntime.InvokeVoidAsync("openFilepicker");
                 }
                 String suggestedFileName = String.Empty;
+                int proccessed = 0;
                 foreach (ImageFile currentImage in ImageFiles)
                 {
-                    output = "1";
-
+                    proccessed++;
                     suggestedFileName = GenerateResizedFileName(currentImage, currentImage.NewWidth, currentImage.NewHeight);
-
-                    output = "2";
+                    await JSRuntime.InvokeVoidAsync("showLoadingIndicator", suggestedFileName, ImageFiles.Count, proccessed);
+                    StateHasChanged();
+                    await Task.Delay(1);  // give the UI some time to catch up
                     if (currentImage.Tag is Image img)
                     {
-                        output = "3";
                         using (var ms = new MemoryStream())
                         {
                             img.Mutate((x) => x.AutoOrient().Resize(currentImage.NewWidth, currentImage.NewHeight));
-                            output = "4";
                             await img.SaveAsync(ms,
-                                    new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder() { Quality = 90 });
-                            output = "5";
+                                    new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder() { Quality = 70 });
                             var bytes = ms.ToArray();
                             await SaveAs(JSRuntime, suggestedFileName, bytes);
-                            output = "6";
                         }
                     }
 
                 }
+                await JSRuntime.InvokeVoidAsync("closeLoadingIndicator");
             }
             finally
             {
                 Resizing = false;
+                StateHasChanged();
             }
 
         }

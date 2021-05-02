@@ -96,7 +96,7 @@
         <button type="submit" class="btn btn-primary mb-2" @onclick="OnCancelButtonClick" id="cancelButton" disabled="@Resizing">Cancel</button>
     </label>
 </div>
-
+<span id="processindicator"></span>
 @if (Resizing)
 {
     <p>Resizing images, this can take some time, please be patient.</p>

@@ -10,3 +10,9 @@
 function openFilepicker(): void {
     document.getElementById("filepicker").click();
 }
+function showLoadingIndicator(currentfile: string, totalItems: number, proccessedItems: number): void {
+    document.getElementById("processindicator").textContent = "Proccessing " + currentfile + " " + proccessedItems + "/" + totalItems;
+}
+function closeLoadingIndicator(): void {
+    document.getElementById("processindicator").textContent = "";
+}
