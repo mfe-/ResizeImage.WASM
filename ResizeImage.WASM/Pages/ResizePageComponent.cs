@@ -16,14 +16,13 @@ namespace ResizeImage.WASM.Pages
 {
     public class ResizePageComponent : ComponentBase, IDisposable, INotifyPropertyChanged
     {
-        protected long maxFileSize = 5 * 1000 * 100;
+        protected long maxFileSize = 3670016;//2^10*3.5
         protected int maxAllowedFiles = 3;
         protected bool isLoading;
         protected string exceptionMessage;
 
         public ResizePageComponent()
         {
-
             WidthCustom = "1024";
             HeightCustom = "768";
             WidthPercent = "50";
@@ -69,7 +68,8 @@ namespace ResizeImage.WASM.Pages
         public int RadioOptions
         {
             get { return _RadioOptions; }
-            set { 
+            set
+            {
                 SetProperty(ref _RadioOptions, value, nameof(RadioOptions));
                 ApplyPreviewDimensions();
             }
@@ -261,51 +261,54 @@ namespace ResizeImage.WASM.Pages
             {
                 Resizing = false;
             }
-           
+
         }
         public void ApplyPreviewDimensions()
         {
-            foreach (ImageFile currentImage in ImageFiles)
+            if (ImageFiles is IEnumerable<ImageFile> imagefiles)
             {
-                int newWidth;
-                int newHeight;
-
-                int height = 0;
-                int.TryParse(HeightCustom, out height);
-                int width = 0;
-                int.TryParse(WidthCustom, out width);
-
-                if (MaintainAspectRatio)
+                foreach (ImageFile currentImage in imagefiles)
                 {
-                    if (MaintainAspectRatioHeight)
+                    int newWidth;
+                    int newHeight;
+
+                    int height = 0;
+                    int.TryParse(HeightCustom, out height);
+                    int width = 0;
+                    int.TryParse(WidthCustom, out width);
+
+                    if (MaintainAspectRatio)
                     {
-                        newWidth = (int)(((double)currentImage.Width / (double)currentImage.Height) * (double)height);
-                        newHeight = height;
+                        if (MaintainAspectRatioHeight)
+                        {
+                            newWidth = (int)(((double)currentImage.Width / (double)currentImage.Height) * (double)height);
+                            newHeight = height;
+                        }
+                        else
+                        {
+                            newWidth = width;
+                            newHeight = (int)(((double)currentImage.Height / (double)currentImage.Width) * (double)width);
+                        }
+                    }
+                    else if (SizePercentChecked)
+                    {
+                        int heightpercent = 0;
+                        int.TryParse(HeightPercent, out heightpercent);
+                        int widthpercent = 0;
+                        int.TryParse(WidthPercent, out widthpercent);
+                        newWidth = currentImage.Width * widthpercent / 100;
+                        newHeight = currentImage.Height * heightpercent / 100;
                     }
                     else
                     {
                         newWidth = width;
-                        newHeight = (int)(((double)currentImage.Height / (double)currentImage.Width) * (double)width);
+                        newHeight = height;
                     }
+                    currentImage.NewWidth = newWidth;
+                    currentImage.NewHeight = newHeight;
                 }
-                else if (SizePercentChecked)
-                {
-                    int heightpercent = 0;
-                    int.TryParse(HeightPercent, out heightpercent);
-                    int widthpercent = 0;
-                    int.TryParse(WidthPercent, out widthpercent);
-                    newWidth = currentImage.Width * widthpercent / 100;
-                    newHeight = currentImage.Height * heightpercent / 100;
-                }
-                else
-                {
-                    newWidth = width;
-                    newHeight = height;
-                }
-                currentImage.NewWidth = newWidth;
-                currentImage.NewHeight = newHeight;
+                StateHasChanged();
             }
-            StateHasChanged();
         }
         public virtual string GenerateResizedFileName(ImageFile storeage, int? width, int? height)
         {
