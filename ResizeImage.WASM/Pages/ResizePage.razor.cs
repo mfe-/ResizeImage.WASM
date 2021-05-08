@@ -6,22 +6,20 @@ using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace ResizeImage.WASM.Pages
 {
-    public class ResizePageComponent : ComponentBase, IDisposable, INotifyPropertyChanged
+    public partial class ResizePage : ComponentBase, IDisposable, INotifyPropertyChanged
     {
         protected long maxFileSize = 3670016;//2^10*3.5
         protected int maxAllowedFiles = 3;
         protected bool isLoading;
         protected string exceptionMessage;
 
-        public ResizePageComponent()
+        public ResizePage()
         {
             WidthCustom = "1024";
             HeightCustom = "768";
